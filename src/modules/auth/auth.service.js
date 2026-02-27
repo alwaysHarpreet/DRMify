@@ -1,9 +1,13 @@
-import jwt from "jsonwebtoken";
-import { v4 as uuidv4 } from "uuid";
 import bcrypt from "bcrypt";
 import User from "../../models/user.model.js";
-import Session from "../../models/session.model.js";
-import { securityConfig } from "../../config/security.js";
+import { generateToken } from "../../utils/token.util.js";
+import { createSession } from "./session.service.js";
+
+export const registerUser = async (email, password) => {
+  const hashed = await bcrypt.hash(password, 12);
+  const user = await User.create({ email, password: hashed });
+  return user;
+};
 
 export const loginUser = async (email, password, fingerprint, ip) => {
   const user = await User.findOne({ email });
@@ -12,32 +16,12 @@ export const loginUser = async (email, password, fingerprint, ip) => {
   const valid = await bcrypt.compare(password, user.password);
   if (!valid) throw new Error("Invalid credentials");
 
-  // Invalidate previous session
-  if (user.activeSessionId) {
-    await Session.updateOne(
-      { sessionId: user.activeSessionId },
-      { isActive: false }
-    );
-  }
+  const sessionId = await createSession(user._id, fingerprint, ip);
 
-  const sessionId = uuidv4();
-
-  await Session.create({
+  const token = generateToken({
     userId: user._id,
-    sessionId,
-    fingerprint,
-    ipAddress: ip,
-    expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+    sessionId
   });
-
-  user.activeSessionId = sessionId;
-  await user.save();
-
-  const token = jwt.sign(
-    { userId: user._id, sessionId },
-    securityConfig.jwtSecret,
-    { expiresIn: securityConfig.jwtExpiry }
-  );
 
   return token;
 };

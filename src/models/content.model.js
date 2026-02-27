@@ -6,8 +6,7 @@ const contentSchema = new mongoose.Schema({
   iv: String,
   authTag: String,
   allowedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  expiryTime: Date,
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  expiry: Date
 }, { timestamps: true });
 
 export default mongoose.model("Content", contentSchema);

@@ -3,5 +3,5 @@ export const securityConfig = {
   jwtExpiry: "15m",
   accessTokenExpiry: "5m",
   encryptionAlgorithm: "aes-256-gcm",
-  encryptionKey: process.env.MASTER_ENCRYPTION_KEY
+  masterKey: Buffer.from(process.env.MASTER_ENCRYPTION_KEY, "hex")
 };
