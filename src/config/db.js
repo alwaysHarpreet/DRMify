@@ -63,6 +63,16 @@ export const initializeDatabase = () => {
     );
   `);
 
+  // Migrations: add columns if missing (allowedUsers, expiry)
+  const contentInfo = db.prepare("PRAGMA table_info(content)").all();
+  const columns = contentInfo.map(c => c.name);
+  if (!columns.includes("allowedUsers")) {
+    db.exec("ALTER TABLE content ADD COLUMN allowedUsers TEXT DEFAULT '';");
+  }
+  if (!columns.includes("expiry")) {
+    db.exec("ALTER TABLE content ADD COLUMN expiry DATETIME;");
+  }
+
   console.log("SQLite database initialized");
   return db;
 };

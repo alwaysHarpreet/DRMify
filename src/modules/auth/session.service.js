@@ -1,6 +1,7 @@
 import { getRedis } from "../../config/redis.js";
 import * as SessionModel from "../../models/session.model.js";
 import * as UserModel from "../../models/user.model.js";
+import { getDB } from "../../config/db.js";
 import { v4 as uuidv4 } from "uuid";
 
 const SESSION_TTL = 14400; // 4 hours in seconds
@@ -88,7 +89,6 @@ export const verifySession = async (token, fingerprint) => {
  */
 export const revokeUserSessions = async (userId) => {
   // Find all user sessions in SQLite
-  const { getDB } = require("../../config/db.js");
   const db = getDB();
   const stmt = db.prepare("SELECT id, token FROM sessions WHERE userId = ?");
   const userSessions = stmt.all(userId);
@@ -137,7 +137,6 @@ export const revokeSession = async (token) => {
  * Check if user has any active sessions
  */
 export const hasActiveSession = (userId) => {
-  const { getDB } = require("../../config/db.js");
   const db = getDB();
   const stmt = db.prepare(
     "SELECT COUNT(*) as count FROM sessions WHERE userId = ? AND expiresAt > CURRENT_TIMESTAMP"

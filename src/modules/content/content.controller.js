@@ -1,12 +1,43 @@
-export const streamContent = async (req, res) => {
-  const { contentId } = req.params;
-  const userId = req.user.userId;
+import * as ContentService from "./content.service.js";
+import multer from "multer";
 
-  const content = await Content.findById(contentId);
-  if (!content) return res.status(404).send("Not found");
+const upload = multer({ storage: multer.memoryStorage() });
 
-  if (!content.allowedUsers.includes(userId))
-    return res.status(403).send("Unauthorized");
+export const streamContent = async (req, res, next) => {
+  try {
+    const { contentId } = req.params;
+    const user = req.user;
 
-  // Decrypt and stream securely
+    const record = ContentService.getContentRecord(contentId);
+    if (!record) return res.status(404).json({ error: "Not found" });
+
+    await ContentService.streamContentToResponse(contentId, res, user);
+  } catch (err) {
+    next(err);
+  }
 };
+
+export const uploadContent = [
+  upload.single("file"),
+  async (req, res, next) => {
+    try {
+      const file = req.file;
+      const { title } = req.body;
+      const user = req.user;
+
+      if (!file) return res.status(400).json({ error: "File required" });
+
+      const result = await ContentService.uploadContent({
+        fileBuffer: file.buffer,
+        filename: file.originalname,
+        title: title || file.originalname,
+        uploadedBy: user.userId,
+        userEmail: user.email || ""
+      });
+
+      res.status(201).json({ message: "Uploaded", content: result });
+    } catch (err) {
+      next(err);
+    }
+  }
+];
